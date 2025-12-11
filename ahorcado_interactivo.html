@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ahorcado Navideño</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 50%, #1a472a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #c41e3a;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .intro {
+            text-align: center;
+            color: #2d5a3d;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .game-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .intentos {
+            font-size: 1.2em;
+            color: #c41e3a;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .ahorcado-dibujo {
+            text-align: center;
+            font-size: 1.5em;
+            font-family: monospace;
+            white-space: pre;
+            background: #f0f0f0;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        .palabra {
+            text-align: center;
+            font-size: 2.5em;
+            letter-spacing: 10px;
+            margin: 30px 0;
+            color: #2d5a3d;
+            font-weight: bold;
+        }
+
+        .letras-jugadas {
+            text-align: center;
+            margin: 20px 0;
+            color: #666;
+        }
+
+        .letras-jugadas span {
+            display: inline-block;
+            margin: 5px;
+            padding: 5px 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .teclado {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+            gap: 8px;
+            margin: 20px 0;
+        }
+
+        .letra-btn {
+            padding: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border: 2px solid #2d5a3d;
+            background: white;
+            color: #2d5a3d;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .letra-btn:hover:not(:disabled) {
+            background: #2d5a3d;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .letra-btn:disabled {
+            background: #dee2e6;
+            color: #6c757d;
+            cursor: not-allowed;
+            border-color: #dee2e6;
+        }
+
+        .mensaje {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .mensaje.exito {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .mensaje.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .mensaje.victoria {
+            background: #fff3cd;
+            color: #856404;
+            font-size: 1.5em;
+        }
+
+        .btn-reiniciar {
+            display: block;
+            margin: 20px auto;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            background: #c41e3a;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn-reiniciar:hover {
+            background: #a01829;
+            transform: scale(1.05);
+        }
+
+        .oculto {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✨ Ahorcado Navideño ✨</h1>
+        <div class="intro">
+            <p>🎅 <strong>Objetivo:</strong> Desvela la palabra secreta de Navidad antes de que la cuerda te atrape.</p>
+            <p>🎁 <strong>Pista:</strong> Juega una letra cada vez. ¡La suerte acompaña a los valientes! 🍀</p>
+        </div>
+
+        <div class="game-info">
+            <div class="intentos" id="intentos">Te quedan 7 intentos ⌛</div>
+        </div>
+
+        <div class="ahorcado-dibujo" id="dibujo"></div>
+
+        <div class="palabra" id="palabra"></div>
+
+        <div class="letras-jugadas">
+            <strong>Letras jugadas:</strong>
+            <div id="letras-usadas"></div>
+        </div>
+
+        <div id="mensaje" class="mensaje oculto"></div>
+
+        <div class="teclado" id="teclado"></div>
+
+        <button class="btn-reiniciar oculto" id="btnReiniciar">🎄 Jugar de Nuevo 🎄</button>
+    </div>
+
+    <script>
+        const palabrasNavidad = [
+            "ABRAZO", "ABRIGO", "ACOGIDA", "ADORNO", "AGRADECIMIENTO",
+            "AMISTAD", "AMOR", "ARBOL", "ARLEQUIN", "AROMA",
+            "BELEN", "BIENVENIDA", "BOTA", "BRASERO", "BRILLANTE",
+            "BRILLANTINA", "BRILLO", "CALCETIN", "CALIDEZ", "CAMELLO",
+            "CAMPANA", "CAMPANADAS", "CAMPANILLA", "CAMPAMENTO", "CAMINATA", "CABALGATA",
+            "CARTA", "CARAMELOS", "CARBON", "CELEBRACION", "CESTA",
+            "CHIMENEA", "CENA", "COLORES", "COMPROMISO", "CONVIVENCIA",
+            "CORDIAL", "CORONA", "DESEO", "DECORACION", "DECORATIVO",
+            "DESLUMBRANTE", "DUENDE", "ELFO", "EMBALAJE", "ESCARCHA", "ESPIRITU", "ESPUMILLON",
+            "ESTABLO", "ESTACION", "ESTRELLA", "EVENTO",
+            "FAMILIA", "FANTASIA", "FELICIDAD", "FESTEJO", "FESTIVIDAD",
+            "FIESTA", "GALLETAS", "GENEROSIDAD", "GUIRNALDA", "HELADA",
+            "HILANDERA", "HOGAR", "HOSPITALIDAD", "ILUMINACION", "ILUSION",
+            "IMAGINACION", "INFINITO", "INOCENCIA", "INSPIRADOR", "INSPIRACION",
+            "INVIERNO", "LINTERNA", "LUZ", "LUCES", "MAGIA",
+            "MANTEL", "MAZAPAN", "MUERDAGO", "NAVIDAD", "NEVADA", "NIEVE",
+            "NOCHEBUENA", "OASIS", "PANDERETA", "PAZ", "POLVORON", "POSADA",
+            "POSTAL", "PUREZA", "REGALOS", "RECUERDO", "REYES",
+            "RENACER", "RENOS", "RESOLUCION", "RESPLANDOR", "REUNION",
+            "SANTA", "SOLIDARIDAD", "SORPRESA", "TURRON", "TRADICION",
+            "TRINEO", "TRINEOS", "VELA", "VENTISCA", "VILLANCICO",
+            "ZAMBOMBA", "ZAPATO"
+        ];
+
+        const estadosAhorcado = [
+            `  +---+
+  |   |
+      |
+      |
+      |
+      |
+=========`,
+            `  +---+
+  |   |
+  O   |
+      |
+      |
+      |
+=========`,
+            `  +---+
+  |   |
+  O   |
+  |   |
+      |
+      |
+=========`,
+            `  +---+
+  |   |
+  O   |
+ /|   |
+      |
+      |
+=========`,
+            `  +---+
+  |   |
+  O   |
+ /|\\  |
+      |
+      |
+=========`,
+            `  +---+
+  |   |
+  O   |
+ /|\\  |
+ /    |
+      |
+=========`,
+            `  +---+
+  |   |
+  O   |
+ /|\\  |
+ / \\  |
+      |
+=========`,
+            `  +---+
+  |   |
+  X   |
+ /|\\  |
+ / \\  |
+      |
+=========`
+        ];
+
+        const abecedario = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+        
+        let palabraSecreta = "";
+        let tablero = [];
+        let letrasJugadas = [];
+        let intentosRestantes = 7;
+        let fallos = 0;
+        let juegoTerminado = false;
+
+        function inicializarJuego() {
+            palabraSecreta = palabrasNavidad[Math.floor(Math.random() * palabrasNavidad.length)];
+            tablero = Array(palabraSecreta.length).fill('_');
+            letrasJugadas = [];
+            intentosRestantes = 7;
+            fallos = 0;
+            juegoTerminado = false;
+
+            document.getElementById('mensaje').classList.add('oculto');
+            document.getElementById('btnReiniciar').classList.add('oculto');
+            
+            actualizarInterfaz();
+            crearTeclado();
+        }
+
+        function crearTeclado() {
+            const tecladoDiv = document.getElementById('teclado');
+            tecladoDiv.innerHTML = '';
+            
+            abecedario.forEach(letra => {
+                const btn = document.createElement('button');
+                btn.className = 'letra-btn';
+                btn.textContent = letra;
+                btn.onclick = () => jugarLetra(letra);
+                btn.id = `btn-${letra}`;
+                tecladoDiv.appendChild(btn);
+            });
+        }
+
+        function jugarLetra(letra) {
+            if (juegoTerminado || letrasJugadas.includes(letra)) return;
+
+            reproducirSonido('click');
+            letrasJugadas.push(letra);
+            document.getElementById(`btn-${letra}`).disabled = true;
+
+            if (palabraSecreta.includes(letra)) {
+                for (let i = 0; i < palabraSecreta.length; i++) {
+                    if (palabraSecreta[i] === letra) {
+                        tablero[i] = letra;
+                    }
+                }
+                reproducirSonido('acierto');
+                mostrarMensaje(`🎉 ¡BINGO! ¡Acertaste con la ${letra}! ¡La Navidad está de tu lado! 🎁`, 'exito');
+            } else {
+                intentosRestantes--;
+                fallos++;
+                reproducirSonido('fallo');
+                mostrarMensaje(`❌ ¡Letra fallida! La ${letra} es tan fría como el Polo Norte. 📉 ¡Un intento menos! 🥶`, 'error');
+            }
+
+            actualizarInterfaz();
+            verificarFinJuego();
+        }
+
+        function actualizarInterfaz() {
+            document.getElementById('dibujo').textContent = estadosAhorcado[fallos];
+            document.getElementById('palabra').textContent = tablero.join(' ');
+            document.getElementById('intentos').textContent = `Te quedan ${intentosRestantes} intentos ⌛`;
+            
+            const letrasUsadasDiv = document.getElementById('letras-usadas');
+            letrasUsadasDiv.innerHTML = letrasJugadas.map(l => `<span>${l}</span>`).join('');
+        }
+
+        function mostrarMensaje(texto, tipo) {
+            const mensajeDiv = document.getElementById('mensaje');
+            mensajeDiv.textContent = texto;
+            mensajeDiv.className = `mensaje ${tipo}`;
+            mensajeDiv.classList.remove('oculto');
+        }
+
+        function verificarFinJuego() {
+            if (!tablero.includes('_')) {
+                juegoTerminado = true;
+                setTimeout(() => reproducirSonido('victoria'), 100);
+                mostrarMensaje(`✨🌟🎄🎅 ¡FELICIDADES! ¡HAS SALVADO LA NAVIDAD! 🎅🎄🌟✨\nLa palabra secreta era: ${palabraSecreta}. ¡Eres un genio! 🧠`, 'victoria');
+                document.getElementById('btnReiniciar').classList.remove('oculto');
+                deshabilitarTeclado();
+            } else if (intentosRestantes === 0) {
+                juegoTerminado = true;
+                setTimeout(() => reproducirSonido('derrota'), 100);
+                mostrarMensaje(`💀 ¡JUEGO TERMINADO! 😭\n¡Oh, no! El Grinch de la Navidad te ha atrapado. Más suerte la próxima vez. 🔚\nLa palabra secreta era: ${palabraSecreta} 🙈`, 'error');
+                document.getElementById('btnReiniciar').classList.remove('oculto');
+                deshabilitarTeclado();
+            }
+        }
+
+        function deshabilitarTeclado() {
+            abecedario.forEach(letra => {
+                document.getElementById(`btn-${letra}`).disabled = true;
+            });
+        }
+
+        // Sistema de sonidos usando la Web Audio API
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function reproducirSonido(tipo) {
+            const oscilador = audioContext.createOscillator();
+            const ganancia = audioContext.createGain();
+            
+            oscilador.connect(ganancia);
+            ganancia.connect(audioContext.destination);
+
+            switch(tipo) {
+                case 'acierto':
+                    // Sonido alegre de acierto (do-mi-sol)
+                    oscilador.frequency.setValueAtTime(523.25, audioContext.currentTime); // Do
+                    oscilador.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // Mi
+                    oscilador.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // Sol
+                    ganancia.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    ganancia.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    oscilador.start(audioContext.currentTime);
+                    oscilador.stop(audioContext.currentTime + 0.3);
+                    break;
+
+                case 'fallo':
+                    // Sonido descendente de error
+                    oscilador.frequency.setValueAtTime(400, audioContext.currentTime);
+                    oscilador.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.3);
+                    oscilador.type = 'sawtooth';
+                    ganancia.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    ganancia.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    oscilador.start(audioContext.currentTime);
+                    oscilador.stop(audioContext.currentTime + 0.3);
+                    break;
+
+                case 'victoria':
+                    // Melodía triunfal (do-mi-sol-do)
+                    const tiempos = [0, 0.15, 0.3, 0.45];
+                    const frecuencias = [523.25, 659.25, 783.99, 1046.50];
+                    
+                    tiempos.forEach((tiempo, i) => {
+                        const osc = audioContext.createOscillator();
+                        const gan = audioContext.createGain();
+                        osc.connect(gan);
+                        gan.connect(audioContext.destination);
+                        
+                        osc.frequency.setValueAtTime(frecuencias[i], audioContext.currentTime + tiempo);
+                        osc.type = 'sine';
+                        gan.gain.setValueAtTime(0.2, audioContext.currentTime + tiempo);
+                        gan.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + tiempo + 0.3);
+                        
+                        osc.start(audioContext.currentTime + tiempo);
+                        osc.stop(audioContext.currentTime + tiempo + 0.3);
+                    });
+                    break;
+
+                case 'derrota':
+                    // Sonido dramático descendente
+                    oscilador.frequency.setValueAtTime(500, audioContext.currentTime);
+                    oscilador.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.6);
+                    oscilador.type = 'triangle';
+                    ganancia.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    ganancia.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
+                    oscilador.start(audioContext.currentTime);
+                    oscilador.stop(audioContext.currentTime + 0.6);
+                    break;
+
+                case 'click':
+                    // Sonido sutil de click
+                    oscilador.frequency.setValueAtTime(800, audioContext.currentTime);
+                    oscilador.type = 'sine';
+                    ganancia.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    ganancia.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+                    oscilador.start(audioContext.currentTime);
+                    oscilador.stop(audioContext.currentTime + 0.05);
+                    break;
+            }
+        }
+
+        document.getElementById('btnReiniciar').onclick = () => {
+            reproducirSonido('click');
+            inicializarJuego();
+        };
+
+        // Iniciar el juego
+        inicializarJuego();
+    </script>
+</body>
+</html>
